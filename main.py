@@ -5,13 +5,12 @@
 ##
 
 from datetime import time
-from datetime import datetime as dt
 
 import pandas as pd
 from githubdata import GithubData
-from mirutil.df_utils import save_as_prq_wo_index as sprq
 from githubdata.main import _clean_github_url as cgurl
 from mirutil import utils as mu
+from mirutil.df_utils import save_as_prq_wo_index as sprq
 
 
 class RepoAddresses :
