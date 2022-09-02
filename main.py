@@ -10,11 +10,15 @@ from datetime import datetime as dt
 import pandas as pd
 from githubdata import GithubData
 from mirutil.df_utils import save_as_prq_wo_index as sprq
+from githubdata.main import _clean_github_url as cgurl
+from mirutil import utils as mu
 
 
 class RepoAddresses :
-  tids = 'imahdimir/d-TSETMC_ID-2-Ticker'
+  tids = 'imahdimir/d-TSETMC_ID-2-FirmTicker'
   wds = 'imahdimir/d-TSE-working-days'
+  targ = 'imahdimir/d-firm-possible-trade-spells'
+  cur_url = cgurl('imahdimir/u-' + targ.split('/')[1])
 
 ra = RepoAddresses()
 
@@ -75,22 +79,31 @@ def main() :
   df = pd.merge(df_tid , df_wds , how = 'cross')
 
   ##
-  sprq(df , 'temp.prq')
 
+  rp_tar = GithubData(ra.targ)
+  df_tar = rp_tar.read_data()
+  ##
+  df_tar = pd.concat([df_tar , df])
+  ##
+  df_tar.drop_duplicates(inplace = True)
+  ##
+  sprq(df_tar , rp_tar.data_fp)
+
+  ##
+  tokp = '/Users/mahdi/Dropbox/tok.txt'
+  tok = mu.get_tok_if_accessible(tokp)
+
+  ##
+  msg = 'updated by'
+  msg += ' ' + ra.cur_url
+
+  rp_tar.commit_and_push(msg , user = rp_tar.user_name , token = tok)
 
   ##
 
 
-  ##
-
-
-  ##
-
-
-  ##
-
-
-  ##
+  for rp in [rp_tid , rp_wds , rp_tar] :
+    rp.rmdir()
 
 
   ##
