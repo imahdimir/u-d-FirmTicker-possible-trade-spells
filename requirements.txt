@@ -1,6 +1,7 @@
-pandas~=1.4.3
-requests~=2.28.1
-bs4~=0.0.1
-beautifulsoup4~=4.11.1
-githubdata~=3.0
-mirutil~=3.3
+# Python 3.10.5
+# Mac OS 12.5
+# Apple M1
+
+pandas~=1.4.4
+githubdata~=8.2
+mirutil~=4.5

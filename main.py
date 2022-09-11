@@ -2,127 +2,109 @@
 
   """
 
-##
-
+import json
 from datetime import time
 
 import pandas as pd
 from githubdata import GithubData
-from githubdata.main import _clean_github_url as cgurl
-from mirutil import utils as mu
 from mirutil.df_utils import save_as_prq_wo_index as sprq
 
 
-class RepoAddresses :
-  tids = 'imahdimir/d-TSETMC_ID-2-FirmTicker'
-  wds = 'imahdimir/d-TSE-working-days'
-  targ = 'imahdimir/d-firm-possible-trade-spells'
-  cur_url = cgurl('imahdimir/u-' + targ.split('/')[1])
+class GDUrl :
+    with open('gdu.json' , 'r') as fi :
+        gj = json.load(fi)
 
-ra = RepoAddresses()
+    cur = gj['cur']
+    ftic = gj['src0']
+    wds = gj['src1']
+    trg = gj['trg']
+
+gu = GDUrl()
 
 class Constants :
-  mkt_start_time = time(9 , 00)
-  mkt_end_time = time(12 , 30)
+    mkt_start_time = time(9 , 00)
+    mkt_end_time = time(12 , 30)
 
 cte = Constants()
 
 class ColumnNames :
-  tid = 'TSETMC_ID'
-  jd = 'JDate'
-  d = 'Date'
-  st = 'StartTime'
-  et = 'EndTime'
-  dur = 'Duration'
-  sdt = 'StartDateTime'
-  edt = 'EndDateTime'
-  sjdt = 'StartJDateTime'
-  ejdt = 'EndJDateTime'
+    jd = 'JDate'
+    st = 'StartTime'
+    et = 'EndTime'
+    sjdt = 'StartJDateTime'
+    ejdt = 'EndJDateTime'
+    ftic = 'FirmTicker'
 
 c = ColumnNames()
 
 def main() :
+    pass
 
-  pass
+    ##
 
-  ##
-  rp_tid = GithubData(ra.tids)
-  df_tid = rp_tid.read_data()
-  ##
-  df_tid.reset_index(inplace = True)
-  ##
-  df_tid = df_tid[[c.tid]]
-  ##
+    gd_ftic = GithubData(gu.ftic)
+    df = gd_ftic.read_data()
+    ##
 
-  rp_wds = GithubData(ra.wds)
-  df_wds = rp_wds.read_data()
-  ##
-  df_wds.reset_index(inplace = True)
-  ##
-  df_wds = df_wds[[c.jd , c.d]]
-  ##
-  for cn , val in zip([c.st , c.et] , [cte.mkt_start_time , cte.mkt_end_time]) :
-    df_wds[cn] = val
-  ##
-  _adc = {
-      c.sjdt : lambda x : str(x[c.jd]) + ' ' + str(x[c.st]) ,
-      c.ejdt : lambda x : str(x[c.jd]) + ' ' + str(x[c.et]) ,
-      c.sdt  : lambda x : str(x[c.d]) + ' ' + str(x[c.st]) ,
-      c.edt  : lambda x : str(x[c.d]) + ' ' + str(x[c.et]) ,
-      }
+    gd_wds = GithubData(gu.wds)
+    df_wds = gd_wds.read_data()
+    ##
+    df_wds = df_wds[[c.jd]]
+    ##
+    _zi = zip([c.st , c.et] , [cte.mkt_start_time , cte.mkt_end_time])
+    for cn , val in _zi :
+        df_wds[cn] = val
 
-  for ky , val in _adc.items() :
-    df_wds[ky] = df_wds.apply(val , axis = 1)
+    ##
+    _adc = {
+            c.sjdt : lambda x : str(x[c.jd]) + ' ' + str(x[c.st]) ,
+            c.ejdt : lambda x : str(x[c.jd]) + ' ' + str(x[c.et]) ,
+            }
 
-  ##
-  df = pd.merge(df_tid , df_wds , how = 'cross')
+    for ky , val in _adc.items() :
+        df_wds[ky] = df_wds.apply(val , axis = 1)
 
-  ##
+    ##
+    do = pd.merge(df , df_wds , how = 'cross')
+    ##
+    do = do[[c.ftic , c.sjdt , c.ejdt]]
+    dov = do.head()
 
-  rp_tar = GithubData(ra.targ)
-  df_tar = rp_tar.read_data()
-  ##
-  df_tar = pd.concat([df_tar , df])
-  ##
-  df_tar.drop_duplicates(inplace = True)
-  ##
-  sprq(df_tar , rp_tar.data_fp)
+    ##
 
-  ##
-  tokp = '/Users/mahdi/Dropbox/tok.txt'
-  tok = mu.get_tok_if_accessible(tokp)
+    gdt = GithubData(gu.trg)
+    gdt.overwriting_clone()
+    ##
+    dft = gdt.read_data()
 
-  ##
-  msg = 'updated by'
-  msg += ' ' + ra.cur_url
+    ##
+    dft = pd.concat([dft , do])
+    ##
+    dft = dft.drop_duplicates()
+    ##
 
-  rp_tar.commit_and_push(msg , user = rp_tar.user_name , token = tok)
+    fp = gdt.data_fp
+    sprq(dft , fp)
 
-  ##
+    ##
+    msg = 'updated by'
+    msg += ' ' + gu.cur
+    ##
 
+    gdt.commit_and_push(msg)
 
-  for rp in [rp_tid , rp_wds , rp_tar] :
-    rp.rmdir()
+    ##
 
 
-  ##
+    for rp in [gd_ftic , gd_wds , gdt] :
+        rp.rmdir()
 
 
-  ##
-
-
-  ##
+    ##
 
 ##
-
-
-##
-
-
 if __name__ == '__main__' :
-  main()
-  print('done')
-
-##
+    main()
+    print('done')
 
 ##
